@@ -11,8 +11,13 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -38,19 +43,35 @@ public class StreamingController {
         StreamingResponseBody responseBody = new StreamingResponseBody() {
             @Override
             public void writeTo(OutputStream out) throws IOException {
-                for (int i = 0; i < 2000; i++) {
-                    out.write((Integer.toString(i) + " - ").getBytes());
-                    out.flush();
-                    try {
-                        Thread.sleep(5);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
+
+                Map<String, BigInteger> map = new HashMap<>();
+                map.put("one", BigInteger.ONE);
+                map.put("ten", BigInteger.TEN);
+//                try(ObjectOutputStream oos = new ObjectOutputStream(out)){
+//                    oos.writeObject(map);
+//                }
+                out.write(convertMapToString(map).getBytes());
+
+//                for (int i = 0; i < 2000; i++) {
+//                    out.write((Integer.toString(i) + " - ").getBytes());
+//                    out.flush();
+//                    try {
+//                        Thread.sleep(5);
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
             }
         };
 
         return CompletableFuture.supplyAsync(() -> new ResponseEntity(responseBody, HttpStatus.OK));
+    }
+
+    private String convertMapToString(Map<?, ?> map) {
+        String mapAsString = map.keySet().stream()
+                .map(key -> key + "=" + map.get(key))
+                .collect(Collectors.joining(", ", "{", "}"));
+        return mapAsString;
     }
 
     // This endpoint executes asynchronously by default because the response type is StreamingResponseBody
